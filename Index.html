@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Studio Desktop Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Styling Library -->
+    <script type="text/javascript" src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            overflow: hidden; /* Sahifa scrollini yashirish (Desktop app hissi uchun) */
+        }
+
+        /* Orqa fon animatsiyasi */
+        .bg-mesh {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+            background: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+        }
+        
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 10s infinite ease-in-out;
+        }
+        .blob-1 { top: 10%; left: 10%; width: 300px; height: 300px; background: #6366f1; animation-delay: 0s; }
+        .blob-2 { bottom: 10%; right: 10%; width: 350px; height: 350px; background: #ec4899; animation-delay: -5s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -50px) rotate(10deg); }
+            66% { transform: translate(-20px, 20px) rotate(-5deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        /* Sidebar Scrollbar */
+        .custom-scroll {
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #334155 transparent;
+        }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 20px; }
+        
+        /* Glass Effect */
+        .glass {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .glass-panel:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Tooltip */
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            margin-bottom: 5px;
+            border: 1px solid #334155;
+            z-index: 50;
+        }
+
+        /* Keyboard Shortcut Badge */
+        .kbd {
+            background: #334155;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 10px;
+            color: #94a3b8;
+            font-family: monospace;
+            border-bottom: 2px solid #1e293b;
+        }
+    </style>
+</head>
+<body class="text-slate-200 h-screen w-screen flex flex-col md:flex-row">
+
+    <!-- Orqa Fon -->
+    <div class="bg-mesh">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <!-- LEFT SIDEBAR: CONTROLS (Scrollable) -->
+    <aside class="w-full md:w-[450px] h-full glass flex flex-col z-20 shadow-2xl">
+        <!-- Header -->
+        <div class="p-6 border-b border-white/10 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-qrcode text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-white text-lg leading-tight">QR Studio</h1>
+                    <p class="text-xs text-slate-400">Desktop Pro v2.0</p>
+                </div>
+            </div>
+            <!-- Window controls (fake aesthetic) -->
+            <div class="flex gap-2">
+                <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+            </div>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 custom-scroll p-6 space-y-8">
+            
+            <!-- 1. Turi (Type) -->
+            <section>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Ma'lumot Turi</h3>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setType('url')" class="type-btn active bg-indigo-600 text-white p-3 rounded-xl flex flex-col items-center gap-1 transition-all hover:bg-indigo-500">
+                        <i class="fa-solid fa-link text-lg"></i>
+                        <span class="text-[10px]">URL</span>
+                    </button>
+                    <button onclick="setType('text')" class="type-btn bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white p-3 rounded-xl flex flex-col items-center gap-1 transition-all">
+                        <i class="fa-solid fa-align-left text-lg"></i>
+                        <span class="text-[10px]">Matn</span>
+                    </button>
+                    <button onclick="setType('email')" class="type-btn bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white p-3 rounded-xl flex flex-col items-center gap-1 transition-all">
+                        <i class="fa-solid fa-envelope text-lg"></i>
+                        <span class="text-[10px]">Email</span>
+                    </button>
+                    <button onclick="setType('wifi')" class="type-btn bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white p-3 rounded-xl flex flex-col items-center gap-1 transition-all">
+                        <i class="fa-solid fa-wifi text-lg"></i>
+                        <span class="text-[10px]">WiFi</span>
+                    </button>
+                </div>
+                
+                <!-- Input Fields (Dynamic) -->
+                <div id="inputFields" class="mt-4">
+                    <!-- Javascript will inject here -->
+                </div>
+            </section>
+
+            <!-- 2. Dizayn (Design) -->
+            <section>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Ko'rinish</h3>
+                <div class="glass-panel p-4 space-y-4">
+                    
+                    <!-- Colors -->
+                    <div>
+                        <label class="text-sm text-slate-300 mb-2 block flex justify-between">
+                            <span>Ranglar</span>
+                            <span class="text-xs text-slate-500">Gradient</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <div class="relative flex-1 group cursor-pointer">
+                                <input type="color" id="color1" value="#6366f1" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="updateQR()">
+                                <div class="w-full h-10 rounded-lg bg-indigo-500 border border-white/10 flex items-center justify-center group-hover:border-white/30 transition" id="color1Preview">
+                                    <i class="fa-solid fa-eye-dropper text-white/50 text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="relative flex-1 group cursor-pointer">
+                                <input type="color" id="color2" value="#a855f7" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="updateQR()">
+                                <div class="w-full h-10 rounded-lg bg-purple-500 border border-white/10 flex items-center justify-center group-hover:border-white/30 transition" id="color2Preview">
+                                    <i class="fa-solid fa-eye-dropper text-white/50 text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shapes -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Nuqtalar</label>
+                            <select id="dotsStyle" onchange="updateQR()" class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <option value="square">Kvadrat</option>
+                                <option value="dots">Yumaloq</option>
+                                <option value="rounded">Burchakli</option>
+                                <option value="extra-rounded">Silliq</option>
+                                <option value="classy">Classy</option>
+                                <option value="classy-rounded">Classy Round</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Ko'zlar</label>
+                            <select id="cornerStyle" onchange="updateQR()" class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <option value="square">Kvadrat</option>
+                                <option value="dot">Nuqta</option>
+                                <option value="extra-rounded">Yumaloq</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Logo -->
+            <section>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Brending</h3>
+                <div class="glass-panel p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden relative" id="logoPreviewBox">
+                        <i class="fa-solid fa-image text-slate-600"></i>
+                        <img id="logoPreviewImg" class="absolute inset-0 w-full h-full object-cover hidden">
+                    </div>
+                    <div class="flex-1">
+                        <label class="cursor-pointer inline-block">
+                            <span class="text-sm text-indigo-400 hover:text-indigo-300 font-medium transition">Logoni tanlash</span>
+                            <input type="file" id="logoInput" accept="image/*" class="hidden" onchange="handleLogoUpload(event)">
+                        </label>
+                        <p class="text-xs text-slate-500 mt-1">PNG yoki JPG (Max 2MB)</p>
+                    </div>
+                    <button onclick="removeLogo()" class="text-slate-500 hover:text-red-400 transition" title="Logoni o'chirish">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="p-6 border-t border-white/10 shrink-0 bg-slate-900/40">
+            <button onclick="downloadQR()" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
+                <i class="fa-solid fa-download"></i>
+                Yuklab Olish
+                <span class="kbd ml-2 bg-indigo-800/50 border-indigo-900 text-indigo-200">CTRL+S</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- RIGHT MAIN: PREVIEW AREA -->
+    <main class="flex-1 relative flex flex-col items-center justify-center p-8 z-10">
+        
+        <!-- Top Stats / Info -->
+        <div class="absolute top-8 right-8 flex gap-4 text-sm text-slate-400">
+            <div class="flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-full border border-white/5">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                Ready
+            </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="relative group perspective-1000">
+            <!-- Glow Effect -->
+            <div class="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl opacity-20 group-hover:opacity-40 blur-xl transition duration-700"></div>
+            
+            <!-- White Card -->
+            <div class="relative bg-white p-6 rounded-3xl shadow-2xl transition-transform duration-500 group-hover:rotate-y-2 group-hover:scale-105">
+                <div id="qr-canvas"></div>
+            </div>
+
+            <!-- Dimensions Badge -->
+            <div class="absolute -bottom-10 left-1/2 -translate-x-1/2 text-slate-500 text-xs font-mono">
+                1000x1000 px • HQ
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Script Logic -->
+    <script>
+        let qrCode;
+        let currentType = 'url';
+        let logoUrl = '';
+
+        const inputContainer = document.getElementById('inputFields');
+        const color1Preview = document.getElementById('color1Preview');
+        const color2Preview = document.getElementById('color2Preview');
+
+        // Inputs Map
+        const inputsMap = {
+            url: `<div><label class="text-xs text-slate-400 mb-1 block">Web Sayt manzili</label>
+                  <div class="relative"><i class="fa-solid fa-globe absolute left-3 top-3.5 text-slate-500 text-sm"></i>
+                  <input type="text" id="dataInput" class="w-full pl-9 pr-3 py-2.5 bg-slate-900/50 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" placeholder="https://example.com" value="https://example.com" onkeyup="updateQR()"></div></div>`,
+            
+            text: `<div><label class="text-xs text-slate-400 mb-1 block">Matn kiriting</label>
+                  <textarea id="dataInput" rows="4" class="w-full p-3 bg-slate-900/50 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Xohlagan matn..." onkeyup="updateQR()"></textarea></div>`,
+            
+            email: `<div class="space-y-3">
+                        <div><label class="text-xs text-slate-400 mb-1 block">Kimga</label><input type="email" id="emailAddr" class="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700 rounded-xl text-sm text-white focus:border-indigo-500 outline-none" placeholder="info@company.com" onkeyup="updateQR()"></div>
+                        <div><label class="text-xs text-slate-400 mb-1 block">Mavzu</label><input type="text" id="emailSubj" class="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700 rounded-xl text-sm text-white focus:border-indigo-500 outline-none" placeholder="Salom" onkeyup="updateQR()"></div>
+                    </div>`,
+            
+            wifi: `<div class="space-y-3">
+                        <div><label class="text-xs text-slate-400 mb-1 block">Tarmoq nomi (SSID)</label><input type="text" id="wifiSSID" class="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700 rounded-xl text-sm text-white focus:border-indigo-500 outline-none" placeholder="MyWiFi" onkeyup="updateQR()"></div>
+                        <div><label class="text-xs text-slate-400 mb-1 block">Parol</label><input type="password" id="wifiPass" class="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700 rounded-xl text-sm text-white focus:border-indigo-500 outline-none" placeholder="********" onkeyup="updateQR()"></div>
+                        <select id="wifiType" class="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700 rounded-xl text-sm text-slate-300 outline-none" onchange="updateQR()"><option value="WPA">WPA/WPA2</option><option value="nopass">Ochiq</option></select>
+                   </div>`
+        };
+
+        // Initialize
+        window.onload = () => {
+            renderInputs();
+            initQR();
+        };
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                downloadQR();
+            }
+        });
+
+        function setType(type) {
+            currentType = type;
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'active');
+                btn.classList.add('bg-slate-800/50', 'text-slate-400');
+            });
+            const activeBtn = event.currentTarget;
+            activeBtn.classList.remove('bg-slate-800/50', 'text-slate-400');
+            activeBtn.classList.add('bg-indigo-600', 'text-white', 'active');
+            renderInputs();
+            updateQR();
+        }
+
+        function renderInputs() {
+            inputContainer.innerHTML = inputsMap[currentType];
+        }
+
+        function getData() {
+            if (currentType === 'url' || currentType === 'text') return document.getElementById('dataInput')?.value || "https://example.com";
+            if (currentType === 'email') return `mailto:${document.getElementById('emailAddr')?.value}?subject=${document.getElementById('emailSubj')?.value}`;
+            if (currentType === 'wifi') return `WIFI:S:${document.getElementById('wifiSSID')?.value};T:${document.getElementById('wifiType')?.value};P:${document.getElementById('wifiPass')?.value};;`;
+            return "QR Studio";
+        }
+
+        function initQR() {
+            qrCode = new QRCodeStyling({
+                width: 350,
+                height: 350,
+                type: "svg",
+                data: "https://example.com",
+                image: "",
+                dotsOptions: { color: "#6366f1", type: "rounded" },
+                backgroundOptions: { color: "#ffffff" },
+                imageOptions: { crossOrigin: "anonymous", margin: 10 }
+            });
+            qrCode.append(document.getElementById("qr-canvas"));
+        }
+
+        function updateQR() {
+            const data = getData();
+            const color1 = document.getElementById('color1').value;
+            const color2 = document.getElementById('color2').value;
+            const dotStyle = document.getElementById('dotsStyle').value;
+            const cornerStyle = document.getElementById('cornerStyle').value;
+
+            // Update Color Previews
+            color1Preview.style.backgroundColor = color1;
+            color2Preview.style.backgroundColor = color2;
+
+            qrCode.update({
+                data: data,
+                dotsOptions: {
+                    color: color1,
+                    type: dotStyle,
+                    gradient: { type: 'linear', rotation: 45, colorStops: [{ offset: 0, color: color1 }, { offset: 1, color: color2 }] }
+                },
+                cornersSquareOptions: { type: cornerStyle, color: color1 },
+                cornersDotOptions: { type: cornerStyle, color: color1 },
+                image: logoUrl
+            });
+        }
+
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    logoUrl = e.target.result;
+                    document.getElementById('logoPreviewImg').src = logoUrl;
+                    document.getElementById('logoPreviewImg').classList.remove('hidden');
+                    document.querySelector('#logoPreviewBox i').classList.add('hidden');
+                    updateQR();
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeLogo() {
+            logoUrl = '';
+            document.getElementById('logoInput').value = "";
+            document.getElementById('logoPreviewImg').classList.add('hidden');
+            document.querySelector('#logoPreviewBox i').classList.remove('hidden');
+            updateQR();
+        }
+
+        function downloadQR() {
+            const btn = document.querySelector('button[onclick="downloadQR()"]');
+            const originalText = btn.innerHTML;
+            
+            // Loading state
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saqlanmoqda...';
+            
+            // High res for download
+            qrCode.update({ width: 2000, height: 2000 });
+            qrCode.download({ name: "qr-studio-pro", extension: "png" });
+
+            // Revert
+            setTimeout(() => {
+                qrCode.update({ width: 350, height: 350 });
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Saqlandi!';
+                setTimeout(() => btn.innerHTML = originalText, 2000);
+            }, 500);
+        }
+    </script>
+</body>
+</html>
+
+
+
